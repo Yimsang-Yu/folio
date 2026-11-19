@@ -1,3 +1,4 @@
+const { validateImages } = require("./ai-images.cjs");
 // Ask-AI providers, run in the main process so credentials never reach the page.
 //
 // - ChatGPT: OpenAI's "Sign in with ChatGPT" for open-source apps (OAuth 2.0 + PKCE with a loopback
@@ -483,6 +484,7 @@ async function askClaude({ model, document, messages }, emit, signal) {
   }
   const args = ["-p", "--output-format", "stream-json", "--verbose", "--include-partial-messages", "--tools", "",
     "--system-prompt-file", promptFile, "--strict-mcp-config", "--setting-sources", "", "--disable-slash-commands", "--no-session-persistence"];
+  if (prompt.inputFormat) args.push("--input-format", prompt.inputFormat);
   if (model && CLAUDE_MODELS.has(model)) args.push("--model", model);
   return new Promise((resolve, reject) => {
     let child;
@@ -604,14 +606,16 @@ function register(handle, send, { confirmLocal } = {}) {
   });
   handle("folio:ai-ask", (_event, req) => {
     if (!validRequest(req) || active.has(req.id)) throw new Error("Invalid request");
+    validateImages(req.messages);
     if (active.size >= MAX_ACTIVE) throw new Error("Another answer is still in progress.");
     const controller = new AbortController();
     active.set(req.id, controller);
     const emit = (text) => send("folio:ai-event", { id: req.id, type: "delta", text });
     const ask = { chatgpt: askChatGPT, claude: askClaude, openrouter: openRouter.ask, custom: customEndpoint.ask }[req.provider];
     const { name, text, truncated, recognized } = req.document;
-    const messages = req.messages.map(({ role, content, context }) => context
-      ? { role, content, context: { text: context.text, page: context.page } } : { role, content });
+    const messages = req.messages.map(({ role, content, context, images }) => ({ role, content,
+      ...(context ? { context: { text: context.text, page: context.page } } : {}),
+      ...(images?.length ? { images: images.map(({ name, dataUrl }) => ({ name, dataUrl })) } : {}) }));
     Promise.resolve(ask({ model: req.model, document: { name, text, truncated, recognized }, messages }, emit, controller.signal))
       .then(() => send("folio:ai-event", { id: req.id, type: "done" }))
       .catch((e) => send("folio:ai-event", controller.signal.aborted ? { id: req.id, type: "done" }

@@ -1,5 +1,5 @@
 const fs = require("node:fs");
-const { chatRequest } = require("./ai-prompt.cjs");
+const { completionsRequest } = require("./ai-prompt.cjs");
 const { providerError: sharedError, readAnswer, secureStorageAvailable, serial } = require("./chat-completions.cjs");
 
 const API = "https://openrouter.ai/api/v1";
@@ -69,8 +69,8 @@ function createOpenRouter({ net, safeStorage, file, writeAtomic }) {
     ask: async ({ model, document, messages }, emit, signal) => {
       if (!validModel(model)) throw new Error("Choose an OpenRouter model in Settings.");
       const passage = messages.at(-1)?.context;
-      if (document.truncated && !passage) throw new Error("This document exceeds Folio’s whole-document limit. Select a passage and ask again.");
-      const { instructions, input } = chatRequest(model, passage
+      if (document.truncated && !passage && !messages.at(-1)?.images?.length) throw new Error("This document exceeds Folio’s whole-document limit. Select a passage and ask again.");
+      const { instructions, input } = completionsRequest(model, passage
         ? { ...document, text: `[Page ${passage.page}]\n${passage.text}`, truncated: true } : document, messages);
       // Small-context endpoints can otherwise silently drop the middle of the document.
       const body = JSON.stringify({ model, messages: [{ role: "system", content: instructions }, ...input], stream: true,

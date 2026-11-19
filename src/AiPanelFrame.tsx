@@ -1,11 +1,11 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode, type HTMLAttributes } from "react";
 import { readSetting, writeSetting } from "./preferences";
 
 const WIDTH_KEY = "folio:ai-panel-width";
 const DEFAULT_WIDTH = 380;
 const MAX_WIDTH = 1000;
 
-export function AiPanelFrame({ children }: { children: ReactNode }) {
+export function AiPanelFrame({ children, ...handlers }: { children: ReactNode } & Pick<HTMLAttributes<HTMLElement>, "onDropCapture" | "onDragOver" | "onPasteCapture">) {
   const panel = useRef<HTMLElement>(null);
   const drag = useRef<{ pointer: number; x: number; width: number } | null>(null);
   const [preferred, setPreferred] = useState(() => {
@@ -41,7 +41,7 @@ export function AiPanelFrame({ children }: { children: ReactNode }) {
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); };
   }, []);
 
-  return <aside ref={panel} className="ai-panel" aria-label="Ask AI" style={{ width }}>
+  return <aside {...handlers} ref={panel} className="ai-panel" aria-label="Ask AI" style={{ width }}>
     <div className="ai-resize-handle" role="separator" tabIndex={0}
       aria-label="Resize Ask AI panel" aria-orientation="vertical"
       aria-valuemin={minimum} aria-valuemax={maximum} aria-valuenow={width}

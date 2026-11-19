@@ -294,11 +294,7 @@ export function saveNotes(notes: DocNotes, generation: number) {
 // ── Ask AI conversations ──────────────────────────────────────────────
 // One conversation per document (same content-based id as notes), so it's there when the document is reopened.
 
-export interface StoredAiMessage {
-  role: "user" | "assistant";
-  content: string;
-  context?: { text: string; page: number };
-}
+export interface StoredAiMessage extends AiMessage {}
 
 export async function getAiHistory(id: string) {
   const { value, generation } = await readStored<{ messages: StoredAiMessage[] }>(AI, id);

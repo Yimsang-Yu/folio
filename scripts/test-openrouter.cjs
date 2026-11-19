@@ -117,3 +117,17 @@ test("requests surface billing, unavailable models, context limits, incomplete s
   };
   await assert.rejects(router.ask(question, () => {}, controller.signal));
 });
+
+
+test("screenshots reach the provider as image blocks even without extracted PDF text", async t => {
+  const { router, net } = fixture(t);
+  await router.save(key);
+  const image = { name: "screenshot.png", dataUrl: "data:image/png;base64," + fs.readFileSync("public/app-icon.png").toString("base64") };
+  let sent;
+  net.fetch = async (_url, options) => {
+    sent = JSON.parse(options.body);
+    return stream('data: {"choices":[{"delta":{"content":"Image received"},"finish_reason":"stop"}]}\n\n');
+  };
+  await router.ask({ ...question, document: { ...question.document, text: "", truncated: true }, messages: [{ role: "user", content: "Explain", images: [image] }] }, () => {}, new AbortController().signal);
+  assert.deepEqual(sent.messages.at(-1).content[1], { type: "image_url", image_url: { url: image.dataUrl } });
+});

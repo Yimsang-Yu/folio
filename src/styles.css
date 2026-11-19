@@ -1673,3 +1673,10 @@ kbd {
 .image-corner.nw, .image-corner.se { cursor: nwse-resize; }
 .image-corner.ne, .image-corner.sw { cursor: nesw-resize; }
 .folio-place-actions { position: absolute; z-index: 11; left: 50%; bottom: 76px; transform: translateX(-50%); display: flex; gap: 6px; padding: 5px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); box-shadow: var(--shadow-sm); }
+
+/* Local screenshot attachments stay within the resizable chat panel. */
+.ai-images { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; min-width: 0; }
+.ai-images img { display: block; max-width: 100%; width: 120px; height: 90px; object-fit: contain; border-radius: 6px; background: var(--surface); }
+.ai-images.sent img { width: auto; height: auto; max-height: 300px; }
+.ai-images.draft > div { position: relative; max-width: 100%; }
+.ai-images.draft button { position: absolute; top: 0; right: 0; border-radius: 50%; background: var(--bg); color: var(--text); cursor: pointer; }

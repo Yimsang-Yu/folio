@@ -8,6 +8,7 @@ import { ocrSession } from "./lib/ocr";
 import { CLAUDE_CODE_URL, PROVIDERS, savedProvider, saveAiPreference, signInChatGPT, subscribeAiPreferences, USAGE_URL } from "./ai";
 import { Modal } from "./Dialogs";
 import { readSetting } from "./preferences";
+import { MAX_IMAGES, MAX_IMAGE_HISTORY_CHARS, readAiImage, transferredFiles } from "./aiImages";
 import { AiPanelFrame } from "./AiPanelFrame";
 
 const AiMarkdown = lazy(() => import("./AiMarkdown").then((module) => ({ default: module.AiMarkdown })));
@@ -96,7 +97,7 @@ function CopyResponse({ text }: { text: string }) {
 
 // Failed and empty answers aren't kept.
 const storedMessages = (messages: Message[]) =>
-  messages.filter((m) => !m.error && m.content).map(({ role, content, context }) => ({ role, content, ...(context ? { context } : {}) }));
+  messages.filter((m) => !m.error && m.content).map(({ role, content, context, images }) => ({ role, content, ...(context ? { context } : {}), ...(images?.length ? { images } : {}) }));
 
 function NewConversationDialog({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
   return <div onMouseDownCapture={event => {
@@ -147,6 +148,25 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
   const model = provider === "chatgpt" && models.length && !models.some(m => m.id === savedModel) ? models[0].id : savedModel;
   const [messages, setMessages] = useState<Message[]>(() => conversations.get(docId)?.messages ?? []);
   const [input, setInput] = useState("");
+  const [images, setImages] = useState<AiImage[]>([]);
+  const [imageError, setImageError] = useState("");
+  const [readingImages, setReadingImages] = useState(false);
+  const readingImagesRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const attach = async (files: File[]) => {
+    if (!files.length || readingImagesRef.current || busyRef.current) return;
+    setImageError("");
+    if (images.length + files.length > MAX_IMAGES) { setImageError("Attach up to four images per question."); return; }
+    readingImagesRef.current = true;
+    setReadingImages(true);
+    try {
+      const added = await Promise.all(files.map(readAiImage));
+      const total = [...messages.flatMap(message => message.images ?? []), ...images, ...added].reduce((sum, image) => sum + image.dataUrl.length, 0);
+      if (total > MAX_IMAGE_HISTORY_CHARS) throw new Error("This conversation has more than 20 MB of images. Start a new conversation to attach more.");
+      setImages(current => [...current, ...added]);
+    } catch (error) { setImageError(error instanceof Error ? error.message : "Couldn't attach this image."); }
+    finally { readingImagesRef.current = false; setReadingImages(false); }
+  };
   const [busy, setBusy] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -260,8 +280,8 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
   };
 
   const send = useCallback(async (question: string) => {
-    if (!ai || !question.trim() || busyRef.current || !ready) return;
-    const turn: Message = { role: "user", content: question.trim(), ...(context ? { context } : {}) };
+    if (!ai || (!question.trim() && !images.length) || readingImagesRef.current || busyRef.current || !ready) return;
+    const turn: Message = { role: "user", content: question.trim() || "Please explain this screenshot.", ...(images.length ? { images } : {}), ...(context ? { context } : {}) };
     const history = [...messages.filter((m) => !m.error && m.content), turn];
     const id = crypto.randomUUID();
     preparing.current = id;
@@ -269,16 +289,18 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
     setBusy(id);
     setMessages([...messages, turn, { role: "assistant", content: "" }]);
     setInput("");
+    setImages([]);
+    setImageError("");
     onClearContext();
     try {
       const session = ocrSession(pdf);
-      const doc = (provider === "openrouter" || provider === "custom") && context
-        ? { text: "", truncated: true, recognized: !!session && (session.embedded.has(context.page) || !!session.pages.get(context.page)?.length) }
+      const doc = (provider === "openrouter" || provider === "custom") && (context || images.length)
+        ? { text: "", truncated: true, recognized: !!session && (!!context && (session.embedded.has(context.page) || !!session.pages.get(context.page)?.length)) }
         : await documentText(pdf);
       if (preparing.current !== id) return;
       preparing.current = null;
       await ai.ask({ id, provider, model, document: { name: docName, ...doc },
-        messages: history.map(({ role, content, context }) => ({ role, content, ...(context ? { context } : {}) })) });
+        messages: history.map(({ role, content, context, images }) => ({ role, content, ...(context ? { context } : {}), ...(images?.length ? { images } : {}) })) });
     } catch {
       if (busyRef.current !== id) return;
       preparing.current = null;
@@ -290,7 +312,7 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
         return next;
       });
     }
-  }, [ai, pdf, context, messages, provider, model, docName, onClearContext, ready]);
+  }, [ai, pdf, context, messages, provider, model, docName, onClearContext, ready, images]);
 
   const signIn = async () => {
     if (!ai) return;
@@ -306,7 +328,16 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
     : context ? "Ask about the selected passage…" : "Ask about this document…";
 
   return (
-    <AiPanelFrame>
+    <AiPanelFrame onDragOver={event => { if (event.dataTransfer.types.includes("Files")) { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; } }}
+      onDropCapture={event => {
+        const files = transferredFiles(event.dataTransfer);
+        event.preventDefault(); event.stopPropagation();
+        if (files.length) void attach(files);
+      }}
+      onPasteCapture={event => {
+        const files = transferredFiles(event.clipboardData);
+        if (files.length) { event.preventDefault(); event.stopPropagation(); void attach(files); }
+      }}>
       <header className="ai-head">
         <div className="ai-title"><Icon name="sparkle" size={16} /> Ask AI</div>
         {ai && <select className="ai-provider" aria-label="AI provider" value={provider} disabled={!!busy}
@@ -393,6 +424,7 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
                   <>
                     {m.context && <blockquote>p. {m.context.page}: {m.context.text.length > 220 ? m.context.text.slice(0, 220) + "…" : m.context.text}</blockquote>}
                     <p>{m.content}</p>
+                    {!!m.images?.length && <div className="ai-images sent">{m.images.map((image, index) => <img key={index} src={image.dataUrl} alt={image.name} />)}</div>}
                   </>
                 ) : m.error ? (
                   <div className="msg-error">
@@ -422,6 +454,12 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
       </div>
 
       <footer className="ai-foot">
+        {!!images.length && <div className="ai-images draft">{images.map((image, index) => <div key={index}><img src={image.dataUrl} alt={image.name} /><button type="button" aria-label={`Remove ${image.name}`} onClick={() => setImages(current => current.filter((_, i) => i !== index))}>×</button></div>)}</div>}
+        {imageError && <p className="msg-error" role="alert">{imageError}</p>}
+        {readingImages && <p role="status">Reading images…</p>}
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={event => { void attach(Array.from(event.target.files ?? [])); event.target.value = ""; }} />
+        <button type="button" className="link small" disabled={!ready || !!busy || readingImages} onClick={() => fileInputRef.current?.click()}>Attach images</button>
+        {!!images.length && <p className="fine">Images are sent when you press Send. Choose a model that supports images.</p>}
         {context && (
           <div className="context-chip">
             <span>p. {context.page}: “{context.text.length > 90 ? context.text.slice(0, 90) + "…" : context.text}”</span>
@@ -456,7 +494,7 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
               <Icon name="stop" size={15} />
             </button>
           ) : (
-            <button type="submit" className="send-btn" disabled={!ready || !input.trim()} title="Send (Enter)" aria-label="Send">
+            <button type="submit" className="send-btn" disabled={!ready || readingImages || (!input.trim() && !images.length)} title="Send (Enter)" aria-label="Send">
               <Icon name="send" size={16} />
             </button>
           )}

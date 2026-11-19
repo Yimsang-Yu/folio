@@ -1,3 +1,4 @@
+import { checkAiImages } from "./smoke-ai-images.mjs";
 import { _electron as electron } from "playwright-core";
 import { mkdtempSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -26,6 +27,7 @@ try {
   assert.equal(await page.locator(".ai-panel table").count(), 2);
   assert.equal(Math.round((await page.locator(".ai-panel").boundingBox()).width), 380);
   await checkAiVisuals(app, page, shots);
+  await checkAiImages(app, page, shots);
   assert.deepEqual(errors, []);
   console.log("PASS: AI layout end-to-end checks, including history and width after reload");
 } catch (error) {

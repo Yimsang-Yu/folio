@@ -1,3 +1,4 @@
+import { checkAiImages } from "./smoke-ai-images.mjs";
 // End-to-end smoke test, run in CI on Windows, macOS, and Linux (and locally with `npm run smoke`):
 // launches the built app in Electron, opens the sample document, and checks that pages render, text is
 // selectable and highlightable, text boxes survive reopening, a scanned page can be recognized and saved with its text,
@@ -1011,6 +1012,7 @@ try {
 
   await checkAiLayout(app, page, shots);
   await checkAiVisuals(app, page, shots);
+  await checkAiImages(app, page, shots);
 
   await page.getByRole("button", { name: "Ask AI", exact: true }).click();
   await aiPanel.getByText("First question").waitFor();

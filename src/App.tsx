@@ -1325,7 +1325,9 @@ export default function App({ tabs, tabKey, upgradeNotes }: { tabs: DocumentTabs
     };
     const start = () => (internal = true);
     const end = () => (internal = false);
+    const inChat = (e: Event) => (e.target as HTMLElement | null)?.closest?.(".ai-panel");
     const enter = (e: DragEvent) => {
+      if (inChat(e)) { depth = 0; setDragging(false); return; }
       if (!hasFiles(e)) return;
       e.preventDefault();
       depth++;
@@ -1338,8 +1340,12 @@ export default function App({ tabs, tabKey, upgradeNotes }: { tabs: DocumentTabs
         setDragging(false);
       }
     };
-    const over = (e: DragEvent) => hasFiles(e) && e.preventDefault();
+    const over = (e: DragEvent) => {
+      if (inChat(e)) { depth = 0; setDragging(false); return; }
+      if (hasFiles(e)) e.preventDefault();
+    };
     const drop = (e: DragEvent) => {
+      if (inChat(e) || e.defaultPrevented) { depth = 0; setDragging(false); return; }
       if (!hasFiles(e)) return;
       e.preventDefault();
       depth = 0;
@@ -1352,7 +1358,7 @@ export default function App({ tabs, tabKey, upgradeNotes }: { tabs: DocumentTabs
     };
     // Pasting a link (outside text fields) fills in Open from URL too.
     const paste = (e: ClipboardEvent) => {
-      if (signing || (e.target as HTMLElement | null)?.closest?.("input, textarea, [contenteditable=true], .freeTextEditor")) return;
+      if (inChat(e) || e.defaultPrevented || signing || (e.target as HTMLElement | null)?.closest?.("input, textarea, [contenteditable=true], .freeTextEditor")) return;
       const image = contentRef.current && Array.from(e.clipboardData?.files ?? []).find(file => /^image\/(png|jpeg)$/i.test(file.type));
       if (image) { e.preventDefault(); void insertImage(image); return; }
       const url = parseWebUrl(e.clipboardData?.getData("text/plain"));

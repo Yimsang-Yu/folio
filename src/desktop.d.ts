@@ -47,10 +47,16 @@ interface AiStatus {
   claude: { installed: boolean; loggedIn: boolean; version?: string; subscription?: boolean; authMethod?: string };
 }
 
+interface AiImage {
+  name: string;
+  dataUrl: string;
+}
+
 interface AiMessage {
   role: "user" | "assistant";
   content: string;
   context?: { text: string; page: number };
+  images?: AiImage[];
 }
 
 interface AiEvent {

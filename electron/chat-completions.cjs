@@ -8,7 +8,7 @@ function providerError(name, status, detail = {}) {
   if (status === 413 || /context.length|context.window|maximum context|too many tokens/i.test(String(detail.code) + " " + String(detail.message))) {
     return new Error("This question and its context exceed the model’s limit. Select a shorter passage or choose a larger-context model.");
   }
-  if (status === 404 || status === 400 || status === 422) return new Error(`${name} couldn't use this model for the request. Check the model ID or choose another text model.`);
+  if (status === 404 || status === 400 || status === 422) return new Error(`${name} couldn't use this model for the request. Check the model ID. For attachments, choose a model that supports images.`);
   if (status === 502 || status === 503) return new Error(`The model is unavailable. Try another ${name} model or try again later.`);
   return new Error(`${name} couldn't complete the request. Please try again.`);
 }
