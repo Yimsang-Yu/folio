@@ -216,7 +216,7 @@ kbd {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: white url("/app-icon.png") center / contain no-repeat;
+  background: transparent url("/app-icon.png") center / contain no-repeat;
 }
 .brand-name {
   font-weight: 650;
