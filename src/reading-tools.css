@@ -276,7 +276,10 @@
 
 /* ── Ask AI ─────────────────────────────────────────────────────────── */
 .ai-panel {
+  position: relative;
   width: 380px;
+  min-width: 0;
+  max-width: 100%;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -284,6 +287,22 @@
   background: var(--bg);
   border-left: 1px solid var(--line);
   animation: slide-in 0.22s var(--ease);
+}
+.ai-resize-handle {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+.ai-resize-handle:hover,
+.ai-resize-handle:focus-visible {
+  background: var(--accent-soft);
+  outline: 1px solid var(--accent);
 }
 @keyframes slide-in {
   from {
@@ -293,6 +312,7 @@
 }
 .ai-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 10px 10px 10px 14px;
@@ -317,6 +337,8 @@
 }
 .ai-body {
   flex: 1;
+  min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   padding: 14px;
   display: flex;
@@ -412,6 +434,30 @@
   min-width: 0;
 }
 .msg.assistant { flex-shrink: 0; }
+.ai-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 8px 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+.ai-table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ai-table-scroll table { width: 100%; border-collapse: collapse; font: inherit; }
+.ai-table-scroll th,
+.ai-table-scroll td {
+  min-width: 7em;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ai-table-scroll th { background: var(--hover); font-weight: 650; }
+.ai-table-scroll tbody tr:nth-child(even) { background: var(--surface); }
+.ai-table-scroll tr:last-child td { border-bottom: 0; }
+.ai-table-scroll tr > :last-child { border-right: 0; }
 .msg .copy-response { margin-top: 6px; color: var(--text-3); }
 .msg h1, .msg h2, .msg h3, .msg h4, .msg h5, .msg h6 {
   margin: 12px 0 8px;
@@ -545,6 +591,8 @@
 }
 .context-chip span {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .context-chip button {
   color: var(--text-3);
@@ -564,6 +612,7 @@
 }
 .composer textarea {
   flex: 1;
+  min-width: 0;
   resize: none;
   border: none;
   outline: none;
@@ -589,6 +638,8 @@
 }
 .ai-meta {
   display: flex;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
   align-items: center;
   gap: 8px;
   font-size: 11.5px;
@@ -620,7 +671,6 @@
     top: 0;
     bottom: 0;
     z-index: 14;
-    width: min(380px, 100%);
     box-shadow: var(--shadow-lg);
   }
 }

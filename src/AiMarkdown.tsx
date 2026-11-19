@@ -2,6 +2,7 @@ import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkBreaks from "remark-breaks";
+import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import { normalizeMathDelimiters } from "./chatMath";
 import "katex/dist/katex.min.css";
@@ -42,9 +43,14 @@ export const AiMarkdown = memo(function AiMarkdown({ text, onPage }: { text: str
     <ReactMarkdown
       skipHtml
       disallowedElements={["img"]}
-      remarkPlugins={[[remarkMath, { singleDollarTextMath: false }], remarkPageReferences, remarkBreaks]}
+      remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }], remarkPageReferences, remarkBreaks]}
       rehypePlugins={[[rehypeKatex, { trust: false, strict: "ignore", maxExpand: 1000, maxSize: 20 }]]}
       components={{
+        table: ({ children }) => (
+          <div className="ai-table-scroll" role="region" aria-label="Table (scroll horizontally for more columns)" tabIndex={0}>
+            <table>{children}</table>
+          </div>
+        ),
         a: ({ node, children }) => {
           const page = Number(node?.properties["data-folio-page"]);
           return Number.isSafeInteger(page) && page > 0

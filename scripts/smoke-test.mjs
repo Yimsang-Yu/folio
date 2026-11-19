@@ -17,6 +17,7 @@ import { checkReaderTools } from "./smoke-reader-tools.mjs";
 import { checkSignatureTargets } from "./smoke-signature-targets.mjs";
 import { checkOpenRouter } from "./smoke-openrouter.mjs";
 import { checkCustomEndpoint } from "./smoke-custom-endpoint.mjs";
+import { checkAiLayout } from "./smoke-ai-layout.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const require = createRequire(import.meta.url);
@@ -1006,6 +1007,8 @@ try {
   assert.equal(await aiPanel.getByRole("button", { name: "Stop" }).count(), 0, "the panel still thinks an answer is running");
   await aiPanel.getByRole("button", { name: "Close Ask AI" }).click();
   console.log("ok  closing Ask AI stops the answer in progress");
+
+  await checkAiLayout(app, page, shots);
 
   await page.getByRole("button", { name: "Ask AI", exact: true }).click();
   await aiPanel.getByText("First question").waitFor();

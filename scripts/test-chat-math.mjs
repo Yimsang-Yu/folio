@@ -248,6 +248,36 @@ See (p. 4). The example costs $5 and $10. Code: ` + "`$literal$`";
     }
   });
 
+  check("Chinese comparison tables render with inline formatting and page citations", () => {
+    const html = render(`| | 标准化 | M-H 方法 |\n|---|---|---|\n| 基本做法 | 分别计算全部接受治疗的加权平均风险 | 计算各层风险比 |\n| 主要结果 | **总体效应** | 合并的分层效应量 (p. 29) |`);
+    assert.match(html, /<table>/);
+    assert.equal([...html.matchAll(/<th(?:\s|>)/g)].length, 3);
+    assert.equal([...html.matchAll(/<td(?:\s|>)/g)].length, 6);
+    assert.match(html, /<strong>总体效应<\/strong>/);
+    assert.equal(pageRefCount(html), 1);
+    assert.match(html, /tabindex="0"/);
+  });
+
+  check("table alignment, escaped pipes, code and math are preserved", () => {
+    const html = render(String.raw`| Left | Right |
+| :--- | ---: |
+| a\|b | \(x_i\) |
+| \`literal\` | (p. 4) |`.replaceAll("\\`", "`"));
+    assert.match(html, /text-align:right/);
+    assert.match(html, /a\|b/);
+    assert.equal(mathCount(html), 1);
+    assert.equal(pageRefCount(html), 1);
+    assert.match(html, /<code>literal<\/code>/);
+    assert.doesNotMatch(render("```\n| A | B |\n|---|---|\n| 1 | 2 |\n```"), /<table>/);
+  });
+
+  check("every streamed table prefix renders and complete tables keep HTML inactive", () => {
+    const text = "| 项目 | 结果 |\n|---|---|\n| 风险 | **降低** (p. 2) |\n| 安全 | ![image](https://example.test/tracker) <script>alert(1)</script> |";
+    for (let end = 0; end <= text.length; end++) assert.doesNotThrow(() => render(text.slice(0, end)));
+    assert.match(render(text), /<table>/);
+    assert.doesNotMatch(render(text), /<(?:script|img|iframe)\b/i);
+  });
+
   console.log(`PASS (${passed} chat-math regression checks)`);
 } finally {
   await server.close();

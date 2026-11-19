@@ -8,6 +8,7 @@ import { ocrSession } from "./lib/ocr";
 import { CLAUDE_CODE_URL, PROVIDERS, savedProvider, saveAiPreference, signInChatGPT, subscribeAiPreferences, USAGE_URL } from "./ai";
 import { Modal } from "./Dialogs";
 import { readSetting } from "./preferences";
+import { AiPanelFrame } from "./AiPanelFrame";
 
 const AiMarkdown = lazy(() => import("./AiMarkdown").then((module) => ({ default: module.AiMarkdown })));
 
@@ -305,7 +306,7 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
     : context ? "Ask about the selected passage…" : "Ask about this document…";
 
   return (
-    <aside className="ai-panel" aria-label="Ask AI">
+    <AiPanelFrame>
       <header className="ai-head">
         <div className="ai-title"><Icon name="sparkle" size={16} /> Ask AI</div>
         {ai && <select className="ai-provider" aria-label="AI provider" value={provider} disabled={!!busy}
@@ -481,6 +482,6 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
         setMessages([]);
         inputRef.current?.focus();
       }} />, document.body)}
-    </aside>
+    </AiPanelFrame>
   );
 }
