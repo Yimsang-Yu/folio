@@ -407,7 +407,7 @@ export function AiPanel({ pdf, docId, persist, docName, context, onClearContext,
                 ) : m.content ? (
                   <>
                     <Suspense fallback={<p style={{ whiteSpace: "pre-wrap" }}>{m.content}</p>}>
-                      <AiMarkdown text={m.content} onPage={onGoToPage} />
+                      <AiMarkdown text={m.content} onPage={onGoToPage} streaming={!!busy && i === messages.length - 1} />
                     </Suspense>
                     {(!busy || i < messages.length - 1) && <CopyResponse text={m.content} />}
                   </>

@@ -540,6 +540,7 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(() => {
+    if (IS_MAC && !TEST_HIDDEN) app.dock.setIcon(path.join(__dirname, "icon.png"));
     protocol.handle("app", async (req) => {
       const { host, pathname } = new URL(req.url);
       if (host !== "folio") return new Response("Not found", { status: 404 });

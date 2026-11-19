@@ -17,6 +17,7 @@ import { checkReaderTools } from "./smoke-reader-tools.mjs";
 import { checkSignatureTargets } from "./smoke-signature-targets.mjs";
 import { checkOpenRouter } from "./smoke-openrouter.mjs";
 import { checkCustomEndpoint } from "./smoke-custom-endpoint.mjs";
+import { checkAiVisuals } from "./smoke-ai-visuals.mjs";
 import { checkAiLayout } from "./smoke-ai-layout.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -1009,6 +1010,7 @@ try {
   console.log("ok  closing Ask AI stops the answer in progress");
 
   await checkAiLayout(app, page, shots);
+  await checkAiVisuals(app, page, shots);
 
   await page.getByRole("button", { name: "Ask AI", exact: true }).click();
   await aiPanel.getByText("First question").waitFor();

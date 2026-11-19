@@ -5,6 +5,7 @@ import path from "node:path";
 import assert from "node:assert/strict";
 import { electronPath } from "./electron-path.mjs";
 import { readerPage } from "./reader-page.mjs";
+import { checkAiVisuals } from "./smoke-ai-visuals.mjs";
 import { checkAiLayout } from "./smoke-ai-layout.mjs";
 const root = path.resolve(import.meta.dirname, "..");
 const shots = path.join(root, "release", "ai-layout");
@@ -24,6 +25,12 @@ try {
   await page.locator(".ai-panel table").first().waitFor();
   assert.equal(await page.locator(".ai-panel table").count(), 2);
   assert.equal(Math.round((await page.locator(".ai-panel").boundingBox()).width), 380);
+  await checkAiVisuals(app, page, shots);
   assert.deepEqual(errors, []);
   console.log("PASS: AI layout end-to-end checks, including history and width after reload");
+} catch (error) {
+  const page = readerPage(await app.firstWindow());
+  await page.screenshot({ path: path.join(shots, "failure.png") }).catch(() => {});
+  console.error(await page.locator(".ai-panel").innerText().catch(() => "no panel"));
+  throw error;
 } finally { await app.close(); }

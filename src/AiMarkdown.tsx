@@ -1,10 +1,11 @@
-import { memo } from "react";
+import { Children, isValidElement, memo, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import rehypeKatex from "rehype-katex";
 import { normalizeMathDelimiters } from "./chatMath";
+import { AiVisual } from "./AiVisual";
 import "katex/dist/katex.min.css";
 
 interface MarkdownNode {
@@ -38,7 +39,7 @@ function remarkPageReferences() {
   };
 }
 
-export const AiMarkdown = memo(function AiMarkdown({ text, onPage }: { text: string; onPage: (n: number) => void }) {
+export const AiMarkdown = memo(function AiMarkdown({ text, onPage, streaming = false }: { text: string; onPage: (n: number) => void; streaming?: boolean }) {
   return (
     <ReactMarkdown
       skipHtml
@@ -46,6 +47,16 @@ export const AiMarkdown = memo(function AiMarkdown({ text, onPage }: { text: str
       remarkPlugins={[remarkGfm, [remarkMath, { singleDollarTextMath: false }], remarkPageReferences, remarkBreaks]}
       rehypePlugins={[[rehypeKatex, { trust: false, strict: "ignore", maxExpand: 1000, maxSize: 20 }]]}
       components={{
+        pre: ({ children }) => {
+          const code = Children.toArray(children)[0];
+          if (isValidElement<{ className?: string; children?: ReactNode }>(code)) {
+            const language = code.props.className?.replace(/^language-/, "");
+            if ((language === "chart" || language === "mermaid") && typeof code.props.children === "string") {
+              return <AiVisual kind={language} source={code.props.children.trimEnd()} streaming={streaming} />;
+            }
+          }
+          return <pre>{children}</pre>;
+        },
         table: ({ children }) => (
           <div className="ai-table-scroll" role="region" aria-label="Table (scroll horizontally for more columns)" tabIndex={0}>
             <table>{children}</table>

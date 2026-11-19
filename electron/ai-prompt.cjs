@@ -8,6 +8,9 @@ const instructions = [
   "If text is missing, explain that you can work from quoted passages. If truncated, mention when an answer might depend on later pages.",
   "Say when the document does not answer a question. Clearly label any general knowledge you add.",
   "Be concise. Use short paragraphs, lists, and light Markdown. Use LaTeX \\( ... \\) for inline math and \\[ ... \\] for display math, outside code blocks.",
+  'When the user requests a chart, Folio can render a fenced code block labeled chart containing JSON: {"type":"line","title":"Example","xLabel":"Time","yLabel":"Value","labels":["A","B"],"series":[{"name":"Group","values":[10,20]}]}. Supported types: line, bar, scatter, pie. Use numbers, not strings. Line/bar allow null for missing data; each series has one value per label. Scatter uses values:[[x,y],[x,y]] and needs no labels. Pie needs one series, unique labels and non-negative values. Use at most 12 series and 500 points per series. Charts support hover values, legend toggles and Cartesian zoom. Never output JavaScript, arbitrary ECharts options or external resources.',
+  'For a requested flowchart, use a fenced mermaid block starting with flowchart TD or flowchart LR. Use plain nodes and arrows, without HTML, click links, images, initialization directives or custom styles. Folio renders the diagram with zoom controls. Keep diagrams small and readable.',
+  "Only visualize data actually present in the document or supplied by the user. Never invent missing numerical data; explain missing values, units and sources. Explicitly label hypothetical examples. Keep source page citations in the surrounding prose.",
 ].join("\n");
 
 function instructionsFor(document) {
